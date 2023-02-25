@@ -1,12 +1,20 @@
+const saveBtn = document.getElementById("save");
+const textInput = document.getElementById("text");
+const fileInput = document.getElementById("file");
+const eraserBtn = document.getElementById("eraser-btn");
+const destroyBtn = document.getElementById("destroy-btn");
 const modeBtn = document.getElementById("mode-btn");
 const colorOptions = Array.from(document.getElementsByClassName("color-option")); //array.from()=>array 형태로 만들기
 const color = document.getElementById("color");
 const lineWidth = document.getElementById("line-width");
 const canvas = document.querySelector("canvas"); // canvas(종이)
 const ctx = canvas.getContext("2d"); // context(붓): 2d 설정
-canvas.width = 800; //canvas의 가로
-canvas.height = 800; // canvas의 세로
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 800;
+canvas.width = CANVAS_WIDTH; //canvas의 가로
+canvas.height = CANVAS_HEIGHT; // canvas의 세로
 ctx.lineWidth = lineWidth.value; //선의 굵기 기본값은 "HTML의 line-width의 value(5)"를 가져온다.
+ctx.lineCap = "round"; // 붓 마무리 터치가 둥글게 마무리.
 let isPainting = false;
 let isFilling = false;
 //1.path------------------------------------------
@@ -106,10 +114,10 @@ function onColorChange(event) {
     ctx.fillStyle = event.target.value; //채우기 색상
 }
 function onColorClick(event) { //어떤 color가 클릭되었는지 알아야!!
-    const colorValue = event.target.dataset.color; //HTML의 data-color="" => event.target.dataset.color에 저장됨을 console창에서 확인가능.
+    const colorValue = event.target.dataset.color; //HTML의 data-* => event.target.dataset.color에 저장됨을 console창에서 확인가능.
     ctx.strokeStyle = colorValue; //선 색상
     ctx.fillStyle = colorValue; //채우기 색상
-    color.value = colorValue; //사용자에게 선택한 색깔을 알려주기 위한 코드................!!!!!!!!!!!!!!!!!????????????
+    color.value = colorValue; //사용자에게 선택한 색깔을 알려주기 위한 코드 
 }
 function onModeClick() {
     if(isFilling){
@@ -122,10 +130,47 @@ function onModeClick() {
 }
 function onCanvasClick() {
     if(isFilling){
-        ctx.fillRect(0, 0, 800, 800); //캔버스 크기 만큼 색 채우기
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); //캔버스 크기 만큼 색 채우기
     }
 }
+function onDestroyClick() {
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+}
+function onEraserClick() {
+    ctx.strokeStyle = "white";
+    isFilling = false;//그리기 모드........
+    modeBtn.innerText = "Fill";
+}
+function onFileChange(event) {
+      const file = event.target.files[0];
+      const url = URL.createObjectURL(file);
+      const image = new Image(); //javascript로 HTML만들기 => <img src=""></img>
+      image.src = url;
+      image.onload = function() { //image를 onload했을때의 function => addEventLinstener의 다른 형태
+        ctx.drawImage(image, 0, 0 , CANVAS_WIDTH, CANVAS_HEIGHT);
+        fileInput.value = null; 
+      };
+}
+function onDoubleClick(event) {
+    const text = textInput.value;
+    if(text !== ""){ 
+        ctx.save(); //현재 상태를 저장.
+        ctx.lineWidth = 1; //text가 더 잘 보이도록 굵기 설정.
+        ctx.font = "48px seris";
+        ctx.strokeText(text, event.offsetX, event.offsetY);
+        ctx.restore();
+    }
+}
+function onSaveClick() {
+    const url = canvas.toDataURL(); //이미지를 url로 만든다.
+    const a = document.createElement("a"); //a(링크)를 만든다.
+    a.href = url;
+    a.download = "myDrawing.png"; //"myDrawing.png"로 저장.
+    a.click(); //링크를 클릭해주면 파일이 다운로드된다.
+}
+canvas.addEventListener("dblclick", onDoubleClick); //canvas를 더블 클릭할 떄, 텍스트 작성 기능
 canvas.addEventListener("mousemove", onMove); //1.
 canvas.addEventListener("mousedown", startPainting); //mousedown일떄 그리기
 canvas.addEventListener("mouseup", cancelPainting); //mouseup일떄 그리지 않기
@@ -137,6 +182,13 @@ lineWidth.addEventListener("change", onLineWidthChange);
 //색 조절하는 기능(HTML의 input: type은 color로 설정.)
 color.addEventListener("change", onColorChange);
 //각 color마다 eventlistner해주기
-colorOptions.forEach(color => color.addEventListener("click", onColorClick)) //colordms 각각 다른 colorOption이다.
+colorOptions.forEach((color) => color.addEventListener("click", onColorClick)); //colordms 각각 다른 colorOption이다.
 //stroke-mode에서 fill-mode로 전환
 modeBtn.addEventListener("click", onModeClick);
+//지우개 기능
+destroyBtn.addEventListener("click", onDestroyClick);
+eraserBtn.addEventListener("click", onEraserClick);
+//
+fileInput.addEventListener("change", onFileChange);
+//이미지 저장
+saveBtn.addEventListener("click", onSaveClick);
